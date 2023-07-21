@@ -39,7 +39,7 @@ const superWizard = new WizardScene('super-wizard',
   }
 )
 
-const bot = new Telegraf(process.env.BOT_TOKEN)
+const bot = new Telegraf('6229454880:AAELolbagiO2DPkEquD5lT2vLUGlJFT_wAs')
 const stage = new Stage([superWizard], { default: 'super-wizard' })
 bot.use(session())
 bot.use(stage.middleware())
