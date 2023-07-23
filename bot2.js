@@ -17,6 +17,7 @@ const registrationWizard = new WizardScene(
   (ctx) => {
     ctx.reply('Please enter pickup location');
     ctx.wizard.state.user = {};
+    console.log(ctx.session.userID)
     return ctx.wizard.next();
   },
   (ctx) => {
@@ -28,15 +29,28 @@ const registrationWizard = new WizardScene(
     ctx.wizard.state.user.destinationLocation = ctx.message.text;
     ctx.reply('Please enter Pick up time');
     return ctx.wizard.next();
+    
   },
 
   (ctx) => {
     ctx.wizard.state.user.pickupTime = parseInt(ctx.message.text);
-    ctx.reply('Please enter prefered gender');
+    bot.telegram.sendMessage(ctx.chat.id,'Please enter prefered gender',{
+      reply_markup:{
+        inline_keyboard:[
+          [
+            { text:'Male', callback_data:'Male'}
+          ],
+          [
+            { text:'Female', callback_data:'Female'}
+          ]
+        ]
+      }
+    });
+    
     return ctx.wizard.next();
   },
   (ctx) => {
-    ctx.wizard.state.user.preferedGender = ctx.message.text;
+    ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
     ctx.reply('Please enter Note');
     return ctx.wizard.next();
   }
@@ -45,8 +59,8 @@ const registrationWizard = new WizardScene(
     ctx.wizard.state.user.note = ctx.message.text;
     let userData = ctx.wizard.state.user
     console.log(userData)
-    ctx.reply(
-      `Thanks for filling out the information
+    let quoteSummaryBot = `You have succesfully requested for ride mate
+
        Pickup location = ${ctx.wizard.state.user.pickupLocation}
        Destination location  = ${ctx.wizard.state.user.destinationLocation}
        Pickup time  = ${ctx.wizard.state.user.pickupTime}
@@ -54,20 +68,69 @@ const registrationWizard = new WizardScene(
        Note  = ${ctx.wizard.state.user.note}
 
       `
-    );
+      let quoteSummaryGroup = `A user is requesting for a mate on 
+
+      Pickup location = ${ctx.wizard.state.user.pickupLocation}
+      Destination location  = ${ctx.wizard.state.user.destinationLocation}
+      Pickup time  = ${ctx.wizard.state.user.pickupTime}
+      Prefered gender  = ${ctx.wizard.state.user.preferedGender}
+      Note  = ${ctx.wizard.state.user.note}
+
+     `
+    ctx.reply(quoteSummaryBot);
+    bot.telegram.sendMessage(-1001896720993, quoteSummaryGroup,{
+      reply_markup:{
+        inline_keyboard:[
+          [
+            { text:'Contact Mate', callback_data:`contactMate_${ctx.chat.id}`}
+          ]
+        ]
+      }
+    })
+    
     return ctx.scene.leave();
+    
   }
 );
 
-// const stage = new Stage([registrationWizard], { default: 'nameScene' });
+//a function that handles contact mate action
+bot.action(/contactMate_(.*)/, (ctx) => {
+  let from = ctx.update.callback_query.from.username
+  let to = parseInt(ctx.match[1])
+  console.log(`from ${from} to ${to}`)
+  bot.telegram.sendMessage(to,`@${from} is waiting to share ride with you on your recent quote`)
+  ctx.answerCbQuery()
+})
 
 const stage = new Stage()
 stage.register(registrationWizard)
 
 bot.use(session())
 bot.use(stage.middleware());
-// bot.hears('hi',(ctx) => {
-//     return ctx.scene.enter('nameScene')
-// });
-bot.start((ctx) => ctx.scene.enter('nameScene'))
+
+bot.start((ctx) => {
+  ctx.session.userID = ctx.chat.id;
+  let userID = ctx.session.userID;
+  console.log(
+    `
+    Username = ${ctx.chat.first_name}
+    User Id = ${userID}
+    `
+    )
+
+ return ctx.scene.enter('nameScene')
+})
+bot.on("message",(ctx)=>{
+  ctx.reply('please use the /start command')
+  console.log(
+    `
+    Username = ${ctx.chat.first_name}
+    User Id = ${ctx.chat.id}
+    `
+    )
+})
 bot.launch();
+
+// Enable graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
