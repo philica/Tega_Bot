@@ -27,14 +27,28 @@ const registrationWizard = new WizardScene(
   },
   (ctx) => {
     ctx.wizard.state.user.destinationLocation = ctx.message.text;
-    ctx.reply('Please enter Pick up time');
+    bot.telegram.sendMessage(ctx.chat.id,'Please enter Pick up time',{
+      reply_markup:{
+        inline_keyboard:[
+          [
+            { text:'in 10 minutes', callback_data:'10'}
+          ],
+          [
+            { text:'in 30 minutes', callback_data:'30'}
+          ],
+          [
+            { text:'in 60 minutes', callback_data:'60'}
+          ]
+        ]
+      }
+    });
     return ctx.wizard.next();
     
   },
 
   (ctx) => {
-    ctx.wizard.state.user.pickupTime = parseInt(ctx.message.text);
-    bot.telegram.sendMessage(ctx.chat.id,'Please enter prefered gender',{
+    ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
+    bot.telegram.sendMessage(ctx.chat.id,'Please choose prefered gender',{
       reply_markup:{
         inline_keyboard:[
           [
@@ -98,7 +112,8 @@ bot.action(/contactMate_(.*)/, (ctx) => {
   let from = ctx.update.callback_query.from.username
   let to = parseInt(ctx.match[1])
   console.log(`from ${from} to ${to}`)
-  bot.telegram.sendMessage(to,`@${from} is waiting to share ride with you on your recent quote`)
+  bot.telegram.sendMessage(to,`@${from} is waiting to share ride with you on your recent quote, please conatact them shortly within 5 minutes or else your request will expire \n\n Thank you for using our service `)
+  ctx.reply("your request has been sent succesfully , your ride mate will contact you shortly , if that did not happen in 5 minutes please try other options \n\n Thank you for using our service")
   ctx.answerCbQuery()
 })
 
