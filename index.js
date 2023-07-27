@@ -27,9 +27,31 @@ const userSchema = new mongoose.Schema({
 })
 const user = mongoose.model('user', userSchema)
 const bot = new Telegraf('6229454880:AAELolbagiO2DPkEquD5lT2vLUGlJFT_wAs');
-
+bot.use(session())
 // console that our bot has started working 
 console.log("bot starting ... ");
+
+//phome number validation function
+function validatePhoneNumber(ctx,phoneNumber) {
+  // Regular expression that matches phone numbers that start with 09, followed by 8 digits
+  const phoneRegex = /^09\d{8}$/;
+
+  // Check if the phone number matches the regular expression and has no non-digit characters
+  if (phoneRegex.test(phoneNumber) && !/\D/.test(phoneNumber)) {
+    // The phone number is valid
+    return true;
+  } else {
+    // The phone number is invalid
+    if (!phoneRegex.test(phoneNumber)) {
+      // The phone number doesn't start with 09, followed by 8 digits
+      ctx.reply("Phone number must start with 09 and have 10 digits");
+    } else if (/\D/.test(phoneNumber)) {
+      // The phone number contains non-digit characters
+      ctx.reply("Phone number can only contain digits");
+    }
+    return false;
+  }
+}
 
 // create an entry scene 
 const quoteWizard = new WizardScene(
@@ -66,26 +88,45 @@ const quoteWizard = new WizardScene(
   },
 
   (ctx) => {
-    ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
-    bot.telegram.sendMessage(ctx.chat.id,'Please choose prefered gender',{
-      reply_markup:{
-        inline_keyboard:[
-          [
-            { text:'Male', callback_data:'Male'}
-          ],
-          [
-            { text:'Female', callback_data:'Female'}
+    if(ctx.updateType == 'callback_query'){
+      ctx.answerCbQuery()
+      ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
+      bot.telegram.sendMessage(ctx.chat.id,'Please choose prefered gender',{
+        reply_markup:{
+          inline_keyboard:[
+            [
+              { text:'Male', callback_data:'Male'}
+            ],
+            [
+              { text:'Female', callback_data:'Female'}
+            ],
+            [
+              { text:'Both works', callback_data:'Both Works'}
+            ]
           ]
-        ]
-      }
-    });
+        }
+      });
+      
+      return ctx.wizard.next();
+    }
+    else{
+      ctx.wizard.back()
+      return ctx.wizard.steps[ctx.wizard.cursor](ctx)
+    }
     
-    return ctx.wizard.next();
   },
   (ctx) => {
-    ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
+    if(ctx.updateType == 'callback_query'){
+      ctx.answerCbQuery()
+      ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
     ctx.reply('Please enter Note');
     return ctx.wizard.next();
+    }
+    else{
+      console.log(ctx.wizard)
+      ctx.wizard.back()
+      return ctx.wizard.steps[ctx.wizard.cursor](ctx)
+    }
   }
   ,
   (ctx) => {
@@ -137,13 +178,19 @@ const registerationWizard = new WizardScene(
   },
   (ctx) =>{
     ctx.wizard.state.user.name = ctx.message.text
-    ctx.reply('Please enter your phone number')
+    ctx.reply('Please enter your phone number with the correct format \n\n Ex 0912345678')
     return ctx.wizard.next()
   },
   (ctx) => {
-    ctx.wizard.state.user.phone = parseInt(ctx.message.text)
-    ctx.reply('please upload photo of your Id')
-    return ctx.wizard.next()
+    if(validatePhoneNumber(ctx,ctx.message.text)){
+      ctx.wizard.state.user.phone = parseInt(ctx.message.text)
+      ctx.reply('please upload photo of your Id')
+      return ctx.wizard.next()
+    }else{
+      ctx.wizard.back();  // Set the listener to the previous function
+      return ctx.wizard.steps[ctx.wizard.cursor](ctx);
+    }
+    
   },
   (ctx) => {
     const photo = ctx.update.message.photo[0].file_id
@@ -178,7 +225,7 @@ const stage = new Stage()
 stage.register(quoteWizard)
 stage.register(registerationWizard)
 
-bot.use(session())
+
 bot.use(stage.middleware());
 
 bot.start((ctx) => {
