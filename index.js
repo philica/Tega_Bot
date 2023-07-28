@@ -20,19 +20,21 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
 
 const userSchema = new mongoose.Schema({
-  chatId:Number,
+  chatId: Number,
   name: String,
   phone: Number,
-  photo: String
+  idPhoto: String,
+  userPhoto: String
+
 })
 const user = mongoose.model('user', userSchema)
-const bot = new Telegraf('6229454880:AAELolbagiO2DPkEquD5lT2vLUGlJFT_wAs');
+const bot = new Telegraf('6622448222:AAH8-menqDuHA2DMebQgFK6IQQsJG1ftoNU');
 bot.use(session())
 // console that our bot has started working 
 console.log("bot starting ... ");
 
 //phome number validation function
-function validatePhoneNumber(ctx,phoneNumber) {
+function validatePhoneNumber(ctx, phoneNumber) {
   // Regular expression that matches phone numbers that start with 09, followed by 8 digits
   const phoneRegex = /^09\d{8}$/;
 
@@ -68,61 +70,61 @@ const quoteWizard = new WizardScene(
   },
   (ctx) => {
     ctx.wizard.state.user.destinationLocation = ctx.message.text;
-    bot.telegram.sendMessage(ctx.chat.id,'Please enter Pick up time',{
-      reply_markup:{
-        inline_keyboard:[
+    bot.telegram.sendMessage(ctx.chat.id, 'Please enter Pick up time', {
+      reply_markup: {
+        inline_keyboard: [
           [
-            { text:'in 10 minutes', callback_data:'10'}
+            { text: 'in 10 minutes', callback_data: '10' }
           ],
           [
-            { text:'in 30 minutes', callback_data:'30'}
+            { text: 'in 30 minutes', callback_data: '30' }
           ],
           [
-            { text:'in 60 minutes', callback_data:'60'}
+            { text: 'in 60 minutes', callback_data: '60' }
           ]
         ]
       }
     });
     return ctx.wizard.next();
-    
+
   },
 
   (ctx) => {
-    if(ctx.updateType == 'callback_query'){
+    if (ctx.updateType == 'callback_query') {
       ctx.answerCbQuery()
       ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
-      bot.telegram.sendMessage(ctx.chat.id,'Please choose prefered gender',{
-        reply_markup:{
-          inline_keyboard:[
+      bot.telegram.sendMessage(ctx.chat.id, 'Please choose prefered gender', {
+        reply_markup: {
+          inline_keyboard: [
             [
-              { text:'Male', callback_data:'Male'}
+              { text: 'Male', callback_data: 'Male' }
             ],
             [
-              { text:'Female', callback_data:'Female'}
+              { text: 'Female', callback_data: 'Female' }
             ],
             [
-              { text:'Both works', callback_data:'Both Works'}
+              { text: 'Both works', callback_data: 'Both Works' }
             ]
           ]
         }
       });
-      
+
       return ctx.wizard.next();
     }
-    else{
+    else {
       ctx.wizard.back()
       return ctx.wizard.steps[ctx.wizard.cursor](ctx)
     }
-    
+
   },
   (ctx) => {
-    if(ctx.updateType == 'callback_query'){
+    if (ctx.updateType == 'callback_query') {
       ctx.answerCbQuery()
       ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
-    ctx.reply('Please enter Note');
-    return ctx.wizard.next();
+      ctx.reply('Please enter Note');
+      return ctx.wizard.next();
     }
-    else{
+    else {
       console.log(ctx.wizard)
       ctx.wizard.back()
       return ctx.wizard.steps[ctx.wizard.cursor](ctx)
@@ -142,7 +144,7 @@ const quoteWizard = new WizardScene(
        Note  = ${ctx.wizard.state.user.note}
 
       `
-      let quoteSummaryGroup = `A user is requesting for a mate on 
+    let quoteSummaryGroup = `A user is requesting for a mate on 
 
       Pickup location = ${ctx.wizard.state.user.pickupLocation}
       Destination location  = ${ctx.wizard.state.user.destinationLocation}
@@ -152,18 +154,18 @@ const quoteWizard = new WizardScene(
 
      `
     ctx.reply(quoteSummaryBot);
-    bot.telegram.sendMessage(-1001896720993, quoteSummaryGroup,{
-      reply_markup:{
-        inline_keyboard:[
+    bot.telegram.sendMessage(-1001896720993, quoteSummaryGroup, {
+      reply_markup: {
+        inline_keyboard: [
           [
-            { text:'Contact Mate', callback_data:`contactMate_${ctx.chat.id}`}
+            { text: 'Contact Mate', callback_data: `contactMate_${ctx.chat.id}` }
           ]
         ]
       }
     })
-    
+
     return ctx.scene.leave();
-    
+
   }
 );
 
@@ -176,38 +178,57 @@ const registerationWizard = new WizardScene(
     ctx.wizard.state.user.chatId = ctx.chat.id
     return ctx.wizard.next();
   },
-  (ctx) =>{
+  (ctx) => {
     ctx.wizard.state.user.name = ctx.message.text
     ctx.reply('Please enter your phone number with the correct format \n\n Ex 0912345678')
     return ctx.wizard.next()
   },
   (ctx) => {
-    if(validatePhoneNumber(ctx,ctx.message.text)){
+    if (validatePhoneNumber(ctx, ctx.message.text)) {
       ctx.wizard.state.user.phone = parseInt(ctx.message.text)
       ctx.reply('please upload photo of your Id')
       return ctx.wizard.next()
-    }else{
+    } else {
       ctx.wizard.back();  // Set the listener to the previous function
       return ctx.wizard.steps[ctx.wizard.cursor](ctx);
     }
-    
+
   },
   (ctx) => {
-    const photo = ctx.update.message.photo[0].file_id
-    ctx.wizard.state.user.photo = photo
+
+    if (ctx.updateSubTypes[0] == 'photo') {
+      const idPhoto = ctx.update.message.photo[0].file_id
+      ctx.wizard.state.user.idPhoto = idPhoto
+      ctx.reply("please take screenshot of your face")
+      ctx.wizard.next()
+    }
+    else {
+      console.log(ctx)
+      ctx.wizard.back()
+      return ctx.wizard.steps[ctx.wizard.cursor](ctx)
+    }
+
+  },
+  (ctx) => {
+   if(ctx.updateSubTypes[0] == 'photo'){
+    const userPhoto = ctx.update.message.photo[0].file_id
+    ctx.wizard.state.user.userPhoto = userPhoto
     // create new user 
     const newUser = new user(ctx.wizard.state.user)
     newUser.save()
-    .then((result)=>{
-      console.log("user succesfully registered",result)
-      ctx.reply('You are now succesfully register please use the /start command to start using our service')
-
-      return ctx.scene.leave();
-    })
-    .catch((err)=>{
-      console.log(err)
-    })
+      .then((result) => {
+        console.log("user succesfully registered", result)
+        ctx.reply('You are now succesfully registered please use the /start command to start using our service \n\n and join this group https://t.me/+P6jIyIbIp6M0ZTJk to receive other requests ')
+        return ctx.scene.leave();
+      })
+      .catch((err) => {
+        console.log(err)
+      })
     return ctx.scene.leave();
+   }else{
+    ctx.wizard.back()
+    return ctx.wizard.steps[ctx.wizard.cursor](ctx)
+   }
   }
 )
 
@@ -216,7 +237,7 @@ bot.action(/contactMate_(.*)/, (ctx) => {
   let from = ctx.update.callback_query.from.username
   let to = parseInt(ctx.match[1])
   console.log(`from ${from} to ${to}`)
-  bot.telegram.sendMessage(to,`@${from} is waiting to share ride with you on your recent quote, please conatact them shortly within 5 minutes or else your request will expire \n\n Thank you for using our service `)
+  bot.telegram.sendMessage(to, `@${from} is waiting to share ride with you on your recent quote, please conatact them shortly within 5 minutes or else your request will expire \n\n Thank you for using our service `)
   ctx.reply("your request has been sent succesfully , your ride mate will contact you shortly , if that did not happen in 5 minutes please try other options \n\n Thank you for using our service")
   ctx.answerCbQuery()
 })
@@ -229,51 +250,51 @@ stage.register(registerationWizard)
 bot.use(stage.middleware());
 
 bot.start((ctx) => {
-  user.findOne({chatId: ctx.chat.id})
-  .then((result)=>{
-    if(result){
-      console.log(result)
-      return ctx.scene.enter('quoteScene')
-    }
-    else{
-      ctx.reply("please register first to start using our service by using the /register command ")
-    }
-  })
-  .catch((err)=>{
-    console.log(err)
-  })
- 
+  user.findOne({ chatId: ctx.chat.id })
+    .then((result) => {
+      if (result) {
+        console.log(result)
+        return ctx.scene.enter('quoteScene')
+      }
+      else {
+        ctx.reply("please register first to start using our service by using the /signup command ")
+      }
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+
 })
 
-bot.command('register', (ctx) => {
-  user.findOne({chatId:ctx.chat.id})
-  .then((result) => {
-    if(result){
-      console.log(result)
-      console.log("you have already registered")
-      ctx.reply("you have already registered, please use the /start command to start using our service")
-    }
-    else{
-      ctx.scene.enter('registerationScene')
-    }
-  })
-  .catch((err) => console.log(err))
+bot.command('signup', (ctx) => {
+  user.findOne({ chatId: ctx.chat.id })
+    .then((result) => {
+      if (result) {
+        console.log(result)
+        console.log("you have already registered")
+        ctx.reply("you have already registered, please use the /start command to start using our service")
+      }
+      else {
+        ctx.scene.enter('registerationScene')
+      }
+    })
+    .catch((err) => console.log(err))
 })
 // bot.on("photo",(ctx)=>{
 //   console.log('photo uploaded ...')
 //   console.log(ctx.update.message.photo[0].file_id)
 //   ctx.replyWithPhoto(ctx.update.message.photo[0].file_id)
- 
+
 // })
 
-bot.on("message",(ctx)=>{
+bot.on("message", (ctx) => {
   ctx.reply('please use the /start command')
   console.log(
     `
     Username = ${ctx.chat.first_name}
     User Id = ${ctx.chat.id}
     `
-    )
+  )
 })
 
 
