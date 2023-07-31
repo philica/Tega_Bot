@@ -25,8 +25,8 @@ const userSchema = new mongoose.Schema({
   phone: Number,
   idPhoto: String,
   userPhoto: String
-
 })
+
 const user = mongoose.model('user', userSchema)
 const bot = new Telegraf('6622448222:AAH8-menqDuHA2DMebQgFK6IQQsJG1ftoNU');
 bot.use(session())
@@ -59,28 +59,36 @@ function validatePhoneNumber(ctx, phoneNumber) {
 const quoteWizard = new WizardScene(
   'quoteScene',
   (ctx) => {
-    ctx.reply('Please enter pickup location');
+    ctx.reply('📍 Please enter pickup location ');
     ctx.wizard.state.user = {};
     return ctx.wizard.next();
   },
   (ctx) => {
+    if(ctx.message.text[0]== '/'){
+      ctx.reply("⚠️ process terminated , please try again with the correct Input")
+      return ctx.scene.leave()
+    }
     ctx.wizard.state.user.pickupLocation = ctx.message.text;
-    ctx.reply('Please enter Destination location');
+    ctx.reply('📍 Please enter Destination location ');
     return ctx.wizard.next();
   },
   (ctx) => {
+    if(ctx.message.text[0]== '/'){
+      ctx.reply("⚠️ process terminated , please try again with the correct Input")
+      return ctx.scene.leave()
+    }
     ctx.wizard.state.user.destinationLocation = ctx.message.text;
-    bot.telegram.sendMessage(ctx.chat.id, 'Please enter Pick up time', {
+    bot.telegram.sendMessage(ctx.chat.id, '⏰ Please enter Pick up time', {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: 'in 10 minutes', callback_data: '10' }
+            { text: '⏰ in 10 minutes', callback_data: '10' }
           ],
           [
-            { text: 'in 30 minutes', callback_data: '30' }
+            { text: '⏰ in 30 minutes', callback_data: '30' }
           ],
           [
-            { text: 'in 60 minutes', callback_data: '60' }
+            { text: '⏰ in 60 minutes', callback_data: '60' }
           ]
         ]
       }
@@ -90,17 +98,35 @@ const quoteWizard = new WizardScene(
   },
 
   (ctx) => {
-    if (ctx.updateType == 'callback_query') {
-      ctx.answerCbQuery()
-      ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
-      bot.telegram.sendMessage(ctx.chat.id, 'Please choose prefered gender', {
+    if(ctx.updateType != 'callback_query'){
+      ctx.reply('⚠️ your input was incorrect')
+      bot.telegram.sendMessage(ctx.chat.id, '⏰ Please enter Pick up time', {
         reply_markup: {
           inline_keyboard: [
             [
-              { text: 'Male', callback_data: 'Male' }
+              { text: '⏰ in 10 minutes', callback_data: '10' }
             ],
             [
-              { text: 'Female', callback_data: 'Female' }
+              { text: '⏰ in 30 minutes', callback_data: '30' }
+            ],
+            [
+              { text: '⏰ in 60 minutes', callback_data: '60' }
+            ]
+          ]
+        }
+      });
+      return;
+    }
+     ctx.answerCbQuery()
+      ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
+      bot.telegram.sendMessage(ctx.chat.id, 'Please choose prefered gender 👦👧', {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '👦 Male', callback_data: 'Male' }
+            ],
+            [
+              { text: '👧 Female', callback_data: 'Female' }
             ],
             [
               { text: 'Both works', callback_data: 'Both Works' }
@@ -110,47 +136,59 @@ const quoteWizard = new WizardScene(
       });
 
       return ctx.wizard.next();
-    }
-    else {
-      ctx.wizard.back()
-      return ctx.wizard.steps[ctx.wizard.cursor](ctx)
-    }
+    
 
   },
   (ctx) => {
-    if (ctx.updateType == 'callback_query') {
-      ctx.answerCbQuery()
+    
+    if(ctx.updateType != 'callback_query'){
+      ctx.reply('your input was incorrect')
+      bot.telegram.sendMessage(ctx.chat.id, 'Please choose prefered gender 👦👧', {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '👦 Male', callback_data: 'Male' }
+            ],
+            [
+              { text: '👧 Female', callback_data: 'Female' }
+            ],
+            [
+              { text: 'Both works', callback_data: 'Both Works' }
+            ]
+          ]
+        }
+      });
+      return;
+    }
+    ctx.answerCbQuery()
       ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
-      ctx.reply('Please enter Note');
+      ctx.reply('📝 Please enter Note');
       return ctx.wizard.next();
-    }
-    else {
-      console.log(ctx.wizard)
-      ctx.wizard.back()
-      return ctx.wizard.steps[ctx.wizard.cursor](ctx)
-    }
+   
   }
   ,
   (ctx) => {
     ctx.wizard.state.user.note = ctx.message.text;
     let userData = ctx.wizard.state.user
     console.log(userData)
-    let quoteSummaryBot = `You have succesfully requested for ride mate
+    let quoteSummaryBot = `
+    ✅ You have succesfully requested for ride mate
 
-       Pickup location = ${ctx.wizard.state.user.pickupLocation}
-       Destination location  = ${ctx.wizard.state.user.destinationLocation}
-       Pickup time  = ${ctx.wizard.state.user.pickupTime}
-       Prefered gender  = ${ctx.wizard.state.user.preferedGender}
-       Note  = ${ctx.wizard.state.user.note}
+    📍 Pickup location = ${ctx.wizard.state.user.pickupLocation}
+    📍 Destination location  = ${ctx.wizard.state.user.destinationLocation}
+    ⏰ Pickup time  = ${ctx.wizard.state.user.pickupTime} + " min"
+    👫 Prefered gender  = ${ctx.wizard.state.user.preferedGender}
+    📝 Note  = ${ctx.wizard.state.user.note}
 
       `
-    let quoteSummaryGroup = `A user is requesting for a mate on 
+    let quoteSummaryGroup = `
+    🚕 A user is requesting for a mate on 
 
-      Pickup location = ${ctx.wizard.state.user.pickupLocation}
-      Destination location  = ${ctx.wizard.state.user.destinationLocation}
-      Pickup time  = ${ctx.wizard.state.user.pickupTime}
-      Prefered gender  = ${ctx.wizard.state.user.preferedGender}
-      Note  = ${ctx.wizard.state.user.note}
+    📍 Pickup location = ${ctx.wizard.state.user.pickupLocation}
+    📍 Destination location  = ${ctx.wizard.state.user.destinationLocation}
+    ⏰ Pickup time  = ${ctx.wizard.state.user.pickupTime} + " min"
+    👫 Prefered gender  = ${ctx.wizard.state.user.preferedGender}
+    📝 Note  = ${ctx.wizard.state.user.note}
 
      `
     ctx.reply(quoteSummaryBot);
@@ -184,51 +222,50 @@ const registerationWizard = new WizardScene(
     return ctx.wizard.next()
   },
   (ctx) => {
-    if (validatePhoneNumber(ctx, ctx.message.text)) {
+    if (!validatePhoneNumber(ctx, ctx.message.text)) {
+      ctx.reply('Please enter your phone number with the correct format \n\n Ex 0912345678')
+      return
+    }
       ctx.wizard.state.user.phone = parseInt(ctx.message.text)
       ctx.reply('please upload photo of your Id')
       return ctx.wizard.next()
-    } else {
-      ctx.wizard.back();  // Set the listener to the previous function
-      return ctx.wizard.steps[ctx.wizard.cursor](ctx);
-    }
+    
 
   },
   (ctx) => {
 
-    if (ctx.updateSubTypes[0] == 'photo') {
-      const idPhoto = ctx.update.message.photo[0].file_id
+    if (ctx.updateSubTypes[0] != 'photo') {
+      ctx.reply("Please send a valid photo of your ID in png format")
+      ctx.reply('please upload photo of your Id')
+      return 
+    }
+    const idPhoto = ctx.update.message.photo[0].file_id
       ctx.wizard.state.user.idPhoto = idPhoto
-      ctx.reply("please take screenshot of your face")
+      ctx.reply("please take selfie of your face")
       ctx.wizard.next()
-    }
-    else {
-      console.log(ctx)
-      ctx.wizard.back()
-      return ctx.wizard.steps[ctx.wizard.cursor](ctx)
-    }
 
   },
   (ctx) => {
-   if(ctx.updateSubTypes[0] == 'photo'){
-    const userPhoto = ctx.update.message.photo[0].file_id
-    ctx.wizard.state.user.userPhoto = userPhoto
-    // create new user 
-    const newUser = new user(ctx.wizard.state.user)
-    newUser.save()
-      .then((result) => {
-        console.log("user succesfully registered", result)
-        ctx.reply('You are now succesfully registered please use the /start command to start using our service \n\n and join this group https://t.me/+P6jIyIbIp6M0ZTJk to receive other requests ')
-        return ctx.scene.leave();
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-    return ctx.scene.leave();
-   }else{
-    ctx.wizard.back()
-    return ctx.wizard.steps[ctx.wizard.cursor](ctx)
+   if(ctx.updateSubTypes[0] != 'photo'){
+    ctx.reply("please input valid file format ")
+    ctx.reply("please take selfie of your face")
+    return 
    }
+
+   const userPhoto = ctx.update.message.photo[0].file_id
+   ctx.wizard.state.user.userPhoto = userPhoto
+   // create new user 
+   const newUser = new user(ctx.wizard.state.user)
+   newUser.save()
+     .then((result) => {
+       console.log("user succesfully registered", result)
+       ctx.reply('You are now succesfully registered please use the /start command to start using our service \n\n and join this group https://t.me/+P6jIyIbIp6M0ZTJk to receive other requests ')
+       return ctx.scene.leave();
+     })
+     .catch((err) => {
+       console.log(err)
+     })
+   return ctx.scene.leave();
   }
 )
 
@@ -280,6 +317,12 @@ bot.command('signup', (ctx) => {
     })
     .catch((err) => console.log(err))
 })
+
+bot.command('cancel', (ctx) => {
+  // Exit the current scene and return to the previous scene or the main scene
+  ctx.scene.leave();
+  ctx.reply('Process Canceled.');
+});
 // bot.on("photo",(ctx)=>{
 //   console.log('photo uploaded ...')
 //   console.log(ctx.update.message.photo[0].file_id)
