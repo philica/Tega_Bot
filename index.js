@@ -176,7 +176,7 @@ const quoteWizard = new WizardScene(
 
     📍 Pickup location = ${ctx.wizard.state.user.pickupLocation}
     📍 Destination location  = ${ctx.wizard.state.user.destinationLocation}
-    ⏰ Pickup time  = ${ctx.wizard.state.user.pickupTime} + " min"
+    ⏰ Pickup time  = "${ctx.wizard.state.user.pickupTime}  min"
     👫 Prefered gender  = ${ctx.wizard.state.user.preferedGender}
     📝 Note  = ${ctx.wizard.state.user.note}
 
@@ -186,7 +186,7 @@ const quoteWizard = new WizardScene(
 
     📍 Pickup location = ${ctx.wizard.state.user.pickupLocation}
     📍 Destination location  = ${ctx.wizard.state.user.destinationLocation}
-    ⏰ Pickup time  = ${ctx.wizard.state.user.pickupTime} + " min"
+    ⏰ Pickup time  = "${ctx.wizard.state.user.pickupTime} min"
     👫 Prefered gender  = ${ctx.wizard.state.user.preferedGender}
     📝 Note  = ${ctx.wizard.state.user.note}
 
