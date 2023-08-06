@@ -24,7 +24,9 @@ const userSchema = new mongoose.Schema({
   name: String,
   phone: Number,
   idPhoto: String,
-  userPhoto: String
+  idFile: String,
+  userPhoto: String,
+  verified: Boolean
 })
 
 const user = mongoose.model('user', userSchema)
@@ -59,21 +61,24 @@ function validatePhoneNumber(ctx, phoneNumber) {
 const quoteWizard = new WizardScene(
   'quoteScene',
   (ctx) => {
-    ctx.reply('📍 Please enter pickup location ');
+    ctx.reply('📍 Please enter Pick up location')
     ctx.wizard.state.user = {};
     return ctx.wizard.next();
   },
   (ctx) => {
-    if(ctx.message.text[0]== '/'){
-      ctx.reply("⚠️ process terminated , please try again with the correct Input")
-      return ctx.scene.leave()
+    if (ctx.message.text) {
+      if (ctx.message.text[0] == '/') {
+        ctx.reply("⚠️ process terminated , please try again with the correct Input")
+        return ctx.scene.leave()
+      }
+      ctx.wizard.state.user.pickupLocation = ctx.message.text;
+      ctx.reply('📍 Please enter Destination location ');
+      return ctx.wizard.next();
     }
-    ctx.wizard.state.user.pickupLocation = ctx.message.text;
-    ctx.reply('📍 Please enter Destination location ');
-    return ctx.wizard.next();
+
   },
   (ctx) => {
-    if(ctx.message.text[0]== '/'){
+    if (ctx.message.text[0] == '/') {
       ctx.reply("⚠️ process terminated , please try again with the correct Input")
       return ctx.scene.leave()
     }
@@ -98,7 +103,7 @@ const quoteWizard = new WizardScene(
   },
 
   (ctx) => {
-    if(ctx.updateType != 'callback_query'){
+    if (ctx.updateType != 'callback_query') {
       ctx.reply('⚠️ your input was incorrect')
       bot.telegram.sendMessage(ctx.chat.id, '⏰ Please enter Pick up time', {
         reply_markup: {
@@ -117,31 +122,31 @@ const quoteWizard = new WizardScene(
       });
       return;
     }
-     ctx.answerCbQuery()
-      ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
-      bot.telegram.sendMessage(ctx.chat.id, 'Please choose prefered gender 👦👧', {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '👦 Male', callback_data: 'Male' }
-            ],
-            [
-              { text: '👧 Female', callback_data: 'Female' }
-            ],
-            [
-              { text: 'Both works', callback_data: 'Both Works' }
-            ]
+    ctx.answerCbQuery()
+    ctx.wizard.state.user.pickupTime = ctx.update.callback_query.data;
+    bot.telegram.sendMessage(ctx.chat.id, 'Please choose prefered gender 👦👧', {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '👦 Male', callback_data: 'Male' }
+          ],
+          [
+            { text: '👧 Female', callback_data: 'Female' }
+          ],
+          [
+            { text: 'Both works', callback_data: 'Both Works' }
           ]
-        }
-      });
+        ]
+      }
+    });
 
-      return ctx.wizard.next();
-    
+    return ctx.wizard.next();
+
 
   },
   (ctx) => {
-    
-    if(ctx.updateType != 'callback_query'){
+
+    if (ctx.updateType != 'callback_query') {
       ctx.reply('your input was incorrect')
       bot.telegram.sendMessage(ctx.chat.id, 'Please choose prefered gender 👦👧', {
         reply_markup: {
@@ -161,10 +166,10 @@ const quoteWizard = new WizardScene(
       return;
     }
     ctx.answerCbQuery()
-      ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
-      ctx.reply('📝 Please enter Note');
-      return ctx.wizard.next();
-   
+    ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
+    ctx.reply('📝 Please enter Note');
+    return ctx.wizard.next();
+
   }
   ,
   (ctx) => {
@@ -226,46 +231,123 @@ const registerationWizard = new WizardScene(
       ctx.reply('Please enter your phone number with the correct format \n\n Ex 0912345678')
       return
     }
-      ctx.wizard.state.user.phone = parseInt(ctx.message.text)
-      ctx.reply('please upload photo of your Id')
-      return ctx.wizard.next()
-    
+    ctx.wizard.state.user.phone = parseInt(ctx.message.text)
+    ctx.reply('please upload photo of your Id in PNG or PDF format')
+    return ctx.wizard.next()
+
 
   },
   (ctx) => {
 
-    if (ctx.updateSubTypes[0] != 'photo') {
-      ctx.reply("Please send a valid photo of your ID in png format")
-      ctx.reply('please upload photo of your Id')
-      return 
-    }
-    const idPhoto = ctx.update.message.photo[0].file_id
+    if (ctx.updateSubTypes[0] == 'photo') {
+      const idPhoto = ctx.update.message.photo[0].file_id
       ctx.wizard.state.user.idPhoto = idPhoto
       ctx.reply("please take selfie of your face")
-      ctx.wizard.next()
+      return ctx.wizard.next()
+    }
+    else if (ctx.updateSubTypes[0] == 'document') {
 
+      const idFile = ctx.message.document.file_id
+      ctx.wizard.state.user.idFile = idFile
+      ctx.reply("please take selfie of your face")
+      return ctx.wizard.next()
+      console.log(ctx.message.document.thumbnail.file_id)
+
+    }
+    else {
+      ctx.reply("Please send a valid photo of your ID in PNG or PDF format")
+      return
+    }
   },
   (ctx) => {
-   if(ctx.updateSubTypes[0] != 'photo'){
-    ctx.reply("please input valid file format ")
-    ctx.reply("please take selfie of your face")
-    return 
-   }
+    if (ctx.updateSubTypes[0] != 'photo') {
+      ctx.reply("please input valid file format ")
+      ctx.reply("please take selfie of your face")
+      return
+    }
 
-   const userPhoto = ctx.update.message.photo[0].file_id
-   ctx.wizard.state.user.userPhoto = userPhoto
-   // create new user 
-   const newUser = new user(ctx.wizard.state.user)
-   newUser.save()
-     .then((result) => {
-       console.log("user succesfully registered", result)
-       ctx.reply('You are now succesfully registered please use the /start command to start using our service \n\n and join this group https://t.me/+P6jIyIbIp6M0ZTJk to receive other requests ')
-       return ctx.scene.leave();
-     })
-     .catch((err) => {
-       console.log(err)
-     })
-   return ctx.scene.leave();
+    const userPhoto = ctx.update.message.photo[0].file_id
+    ctx.wizard.state.user.userPhoto = userPhoto
+    ctx.wizard.state.user.verified = false
+    // create new user 
+    const newUser = new user(ctx.wizard.state.user)
+    newUser.save()
+      .then((result) => {
+        console.log("user succesfully registered", result)
+        ctx.reply('You are now succesfully registered , you will be able to start using our service as soon as our team verifies your account 👍 ')
+        return ctx.scene.leave();
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+    return ctx.scene.leave();
+  }
+)
+
+
+//user verification scene 
+const verificationWizard = new WizardScene(
+  'verificationScene',
+  (ctx) => {
+    ctx.reply('Please input Login password')
+    return ctx.wizard.next()
+  },
+  (ctx) => {
+    if (ctx.message.text == 'admin') {
+
+      user.find({ verified: false })
+        .then((result) => {
+          console.log(result)
+          if (result.length == 0) {
+            ctx.reply("No additional user to verify")
+          }
+          //iterate through each and every un verified user
+          result.forEach((user) => {
+            let media = [{
+              type: 'photo',
+              media: user.userPhoto,
+              caption: 'This is a beautiful photo.'
+            },
+            {
+              type: 'photo',
+              media: user.idPhoto || 'https://img.freepik.com/free-vector/no-data-concept-illustration_114360-2506.jpg?size=626&ext=jpg&ga=GA1.2.963996254.1685645944&semt=ais',
+              caption: 'This is a beautiful photo.'
+            },
+            ]
+            ctx.telegram.sendMediaGroup(ctx.message.chat.id, media)
+            if(user.idFile){
+              ctx.replyWithDocument(user.idFile)
+            }
+            let usera =
+              `
+      user name = ${user.name}
+phone = ${user.phone}
+      `
+            bot.telegram.sendMessage(ctx.chat.id, usera, {
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { text: '✅ Accept', callback_data: `verified_${user.chatId}` },
+                    { text: '❌ Decline', callback_data: `Declined_${user.chatId}` }
+                  ],
+
+                ]
+              }
+            })
+          })
+
+        })
+        .catch((err) => {
+          console.log(err)
+        })
+
+      return ctx.scene.leave()
+    }
+    else {
+
+      ctx.reply('The password you entered is not correct please try again')
+      return ctx.scene.leave()
+    }
   }
 )
 
@@ -279,9 +361,12 @@ bot.action(/contactMate_(.*)/, (ctx) => {
   ctx.answerCbQuery()
 })
 
+
+
 const stage = new Stage()
 stage.register(quoteWizard)
 stage.register(registerationWizard)
+stage.register(verificationWizard)
 
 
 bot.use(stage.middleware());
@@ -290,6 +375,9 @@ bot.start((ctx) => {
   user.findOne({ chatId: ctx.chat.id })
     .then((result) => {
       if (result) {
+        if (!result.verified) {
+          return ctx.reply('please wait till our team verifies your account')
+        }
         console.log(result)
         return ctx.scene.enter('quoteScene')
       }
@@ -307,8 +395,6 @@ bot.command('signup', (ctx) => {
   user.findOne({ chatId: ctx.chat.id })
     .then((result) => {
       if (result) {
-        console.log(result)
-        console.log("you have already registered")
         ctx.reply("you have already registered, please use the /start command to start using our service")
       }
       else {
@@ -323,6 +409,40 @@ bot.command('cancel', (ctx) => {
   ctx.scene.leave();
   ctx.reply('Process Canceled.');
 });
+
+
+
+//verify user account
+bot.command('verify', (ctx) => {
+  ctx.scene.enter('verificationScene')
+})
+
+bot.action(/verified_(.*)/, (ctx) => {
+  let to = parseInt(ctx.match[1])
+  console.log(to)
+  user.updateOne({ chatId: to }, { $set: { verified: true } })
+    .then((result) => {
+      console.log(result)
+      bot.telegram.sendMessage(to, `congratulation 🎊🎊🎊
+    After carefully assesing your document your account is verified ✅
+    please join this telegram group to receive requests 
+    
+    Tega Group : https://t.me/+P6jIyIbIp6M0ZTJk
+
+    `)
+
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+
+
+  ctx.answerCbQuery()
+})
+
+
+
+
 // bot.on("photo",(ctx)=>{
 //   console.log('photo uploaded ...')
 //   console.log(ctx.update.message.photo[0].file_id)
