@@ -7,7 +7,7 @@ const WizardScene = require('telegraf/scenes/wizard')
 const { enter, leave } = Stage
 const mongoose = require('mongoose')
 
-mongoose.connect("mongodb+srv://philica:sabifithawok21@cluster0.zot84q1.mongodb.net/AbroBot?retryWrites=true&w=majority", { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect("connection url", { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('MongoDB Connected');
   })
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
 })
 
 const user = mongoose.model('user', userSchema)
-const bot = new Telegraf('6622448222:AAH8-menqDuHA2DMebQgFK6IQQsJG1ftoNU');
+const bot = new Telegraf('bot token');
 bot.use(session())
 // console that our bot has started working 
 console.log("bot starting ... ");
