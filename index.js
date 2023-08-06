@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
   idPhoto: String,
   idFile: String,
   userPhoto: String,
-  verified: Boolean
+  verified: Boolean,
 })
 
 const user = mongoose.model('user', userSchema)
