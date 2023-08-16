@@ -7,7 +7,7 @@ const WizardScene = require('telegraf/scenes/wizard')
 const { enter, leave } = Stage
 const mongoose = require('mongoose')
 
-mongoose.connect("connection url", { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect("mongodb+srv://philica:sabifithawok21@cluster0.zot84q1.mongodb.net/AbroBot?retryWrites=true&w=majority", { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('MongoDB Connected');
   })
@@ -26,11 +26,11 @@ const userSchema = new mongoose.Schema({
   idPhoto: String,
   idFile: String,
   userPhoto: String,
-  verified: Boolean,
+  verified: Boolean
 })
 
 const user = mongoose.model('user', userSchema)
-const bot = new Telegraf('bot token');
+const bot = new Telegraf('6622448222:AAH8-menqDuHA2DMebQgFK6IQQsJG1ftoNU');
 bot.use(session())
 // console that our bot has started working 
 console.log("bot starting ... ");
@@ -61,7 +61,7 @@ function validatePhoneNumber(ctx, phoneNumber) {
 const quoteWizard = new WizardScene(
   'quoteScene',
   (ctx) => {
-    ctx.reply('📍 Please enter Pick up location')
+    ctx.reply('Please enter Pick up location 📍 ')
     ctx.wizard.state.user = {};
     return ctx.wizard.next();
   },
@@ -72,7 +72,7 @@ const quoteWizard = new WizardScene(
         return ctx.scene.leave()
       }
       ctx.wizard.state.user.pickupLocation = ctx.message.text;
-      ctx.reply('📍 Please enter Destination location ');
+      ctx.reply('Please enter Destination location 📍 ');
       return ctx.wizard.next();
     }
 
@@ -83,17 +83,16 @@ const quoteWizard = new WizardScene(
       return ctx.scene.leave()
     }
     ctx.wizard.state.user.destinationLocation = ctx.message.text;
-    bot.telegram.sendMessage(ctx.chat.id, '⏰ Please enter Pick up time', {
+    bot.telegram.sendMessage(ctx.chat.id, 'Please choose Pick up time ⏰ ', {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '⏰ in 10 minutes', callback_data: '10' }
+            { text: '⏰ Now ', callback_data: 'Now' },
+            { text: '⏰ in 10 minutes', callback_data: '10 Min' }
           ],
           [
-            { text: '⏰ in 30 minutes', callback_data: '30' }
-          ],
-          [
-            { text: '⏰ in 60 minutes', callback_data: '60' }
+            { text: '⏰ in 30 minutes', callback_data: '30 Min' },
+            { text: '⏰ in 60 minutes', callback_data: '60 Min' }
           ]
         ]
       }
@@ -105,17 +104,16 @@ const quoteWizard = new WizardScene(
   (ctx) => {
     if (ctx.updateType != 'callback_query') {
       ctx.reply('⚠️ your input was incorrect')
-      bot.telegram.sendMessage(ctx.chat.id, '⏰ Please enter Pick up time', {
+      bot.telegram.sendMessage(ctx.chat.id, 'Please choose Pick up time ⏰ ', {
         reply_markup: {
           inline_keyboard: [
             [
-              { text: '⏰ in 10 minutes', callback_data: '10' }
+              { text: '⏰ Now ', callback_data: 'Now' },
+              { text: '⏰ in 10 minutes', callback_data: '10 Min' }
             ],
             [
-              { text: '⏰ in 30 minutes', callback_data: '30' }
-            ],
-            [
-              { text: '⏰ in 60 minutes', callback_data: '60' }
+              { text: '⏰ in 30 minutes', callback_data: '30 Min' },
+              { text: '⏰ in 60 minutes', callback_data: '60 Min' }
             ]
           ]
         }
@@ -167,7 +165,7 @@ const quoteWizard = new WizardScene(
     }
     ctx.answerCbQuery()
     ctx.wizard.state.user.preferedGender = ctx.update.callback_query.data;
-    ctx.reply('📝 Please enter Note');
+    ctx.reply('Please enter Note 📝 ');
     return ctx.wizard.next();
 
   }
@@ -181,7 +179,7 @@ const quoteWizard = new WizardScene(
 
     📍 Pickup location = ${ctx.wizard.state.user.pickupLocation}
     📍 Destination location  = ${ctx.wizard.state.user.destinationLocation}
-    ⏰ Pickup time  = "${ctx.wizard.state.user.pickupTime}  min"
+    ⏰ Pickup time  = "${ctx.wizard.state.user.pickupTime}"
     👫 Prefered gender  = ${ctx.wizard.state.user.preferedGender}
     📝 Note  = ${ctx.wizard.state.user.note}
 
@@ -191,7 +189,7 @@ const quoteWizard = new WizardScene(
 
     📍 Pickup location = ${ctx.wizard.state.user.pickupLocation}
     📍 Destination location  = ${ctx.wizard.state.user.destinationLocation}
-    ⏰ Pickup time  = "${ctx.wizard.state.user.pickupTime} min"
+    ⏰ Pickup time  = "${ctx.wizard.state.user.pickupTime}"
     👫 Prefered gender  = ${ctx.wizard.state.user.preferedGender}
     📝 Note  = ${ctx.wizard.state.user.note}
 
@@ -315,7 +313,7 @@ const verificationWizard = new WizardScene(
             },
             ]
             ctx.telegram.sendMediaGroup(ctx.message.chat.id, media)
-            if(user.idFile){
+            if (user.idFile) {
               ctx.replyWithDocument(user.idFile)
             }
             let usera =
@@ -353,11 +351,15 @@ phone = ${user.phone}
 
 //a function that handles contact mate action
 bot.action(/contactMate_(.*)/, (ctx) => {
-  let from = ctx.update.callback_query.from.username
+  let fromUserName = ctx.update.callback_query.from.username
+  let fromUserId = ctx.update.callback_query.from.id
   let to = parseInt(ctx.match[1])
-  console.log(`from ${from} to ${to}`)
-  bot.telegram.sendMessage(to, `@${from} is waiting to share ride with you on your recent quote, please conatact them shortly within 5 minutes or else your request will expire \n\n Thank you for using our service `)
-  ctx.reply("your request has been sent succesfully , your ride mate will contact you shortly , if that did not happen in 5 minutes please try other options \n\n Thank you for using our service")
+  console.log(`from ${fromUserName} to ${to}`)
+  bot.telegram.sendMessage(to, `@${fromUserName} is waiting to share ride with you on your recent quote, please conatact them shortly within 5 minutes or else your request will expire \n\n Thank you for using our service `)
+
+  bot.telegram.sendMessage(fromUserId, "your request has been sent succesfully , your ride mate will contact you shortly , if that did not happen in 5 minutes please try other requests \n\n Thank you for using our service")
+
+
   ctx.answerCbQuery()
 })
 
@@ -372,6 +374,7 @@ stage.register(verificationWizard)
 bot.use(stage.middleware());
 
 bot.start((ctx) => {
+  console.log(ctx)
   user.findOne({ chatId: ctx.chat.id })
     .then((result) => {
       if (result) {
